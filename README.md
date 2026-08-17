@@ -62,7 +62,107 @@ make tianmaft
 - USB 2.0 port/hub (USB 3.0 can cause issues with Poco F1)
 - Backup all your data (phone will be wiped)
 
-## Quick Installation (Using Pre-built Images)
+## Fastboot Installation (Recommended)
+
+### Prerequisites
+
+- Unlocked bootloader
+- Computer with `adb` and `fastboot` installed
+- USB cable (USB 2.0 port/hub recommended)
+- Download required files (see below)
+
+### Download Links
+
+| File | Download |
+|------|----------|
+| **Boot image** | [Community builds](https://github.com/Unofficial-droidian-for-pocof1/linux_android_xiaomi_beryllium/releases) |
+| **Rootfs** | [Droidian releases](https://github.com/droidian-images/rootfs-api28gsi-all/releases) |
+| **Vendor image** | [UBports](https://github.com/ubports-beryllium/artifacts/releases/download/v3/vendor.img) |
+| **Android 9 firmware** | [MIUI firmware](https://xiaomifirmwareupdater.com/download/?file=fw_beryllium_miui_POCOF1Global_9.6.27_6673f8a455_9.0.zip) |
+
+### Flash Steps
+
+#### 1. Boot to Fastboot Mode
+
+```bash
+# Power off device completely
+# Hold Volume- and Power simultaneously
+# Release when vibration is felt
+# Device shows fastboot logo
+
+# Or use ADB:
+adb reboot bootloader
+```
+
+#### 2. Check Device Connection
+
+```bash
+fastboot devices
+# Should show: XXXXXXXX	fastboot
+```
+
+#### 3. Flash Boot Image (Kernel)
+
+```bash
+fastboot flash boot boot.img
+```
+
+#### 4. Flash Rootfs (Optional - can do via TWRP)
+
+```bash
+fastboot flash system droidian-rootfs-arm64.img
+```
+
+#### 5. Flash Vendor (Optional)
+
+```bash
+fastboot flash vendor vendor.img
+```
+
+#### 6. Wipe Data (First Install)
+
+```bash
+fastboot -w
+```
+
+#### 7. Reboot
+
+```bash
+fastboot reboot
+```
+
+### Quick Flash Script
+
+```bash
+# Run the automated flash script
+chmod +x scripts/flash-fastboot.sh
+./scripts/flash-fastboot.sh
+```
+
+### Post-Install
+
+1. Wait for first boot (3-5 minutes)
+2. Default unlock code: `1234`
+3. Install adaptation package:
+   ```bash
+   # Copy .deb to device, then:
+   sudo dpkg -i adaptation-droidian-beryllium-<variant>.deb
+   sudo reboot
+   ```
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| **Bootloop** | Boot to TWRP, wipe cache/dalvik, try different boot image |
+| **No touch** | Wrong panel variant - try different adaptation package |
+| **Black screen** | Check display settings, try different boot image |
+| **WiFi not working** | Install firmware: `sudo dpkg -i firmware-*` |
+| **No sound** | Check audio config: `alsamixer` |
+
+---
+
+## Quick Installation (Using Pre-built Images - Alternative)
 
 ### 1. Download Required Files
 
