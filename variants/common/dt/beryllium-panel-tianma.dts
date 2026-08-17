@@ -1,0 +1,92 @@
+// Device Tree Source for Tianma Panel
+// Xiaomi Poco F1 (beryllium) - TD4375
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "xiaomi,beryllium", "qcom,sdm845";
+
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			#address-cells = <2>;
+			#size-cells = <2>;
+		};
+	};
+
+	// Tianma Panel
+	fragment@1 {
+		target = <&mdss_dsi>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&mdss_dsi0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&mdss_dsi0_panel>;
+		__overlay__ {
+			compatible = "tianma,td4375";
+			reg = <0>;
+			status = "okay";
+
+			reset-gpios = <&tlmm 32 0>;
+
+			port {
+				td4375_in_0: endpoint {
+					remote-endpoint = <&mdss_dsi0_out>;
+				};
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&mdss_dsi0_out>;
+		__overlay__ {
+			remote-endpoint = <&td4375_in_0>;
+		};
+	};
+
+	// Touchscreen (Focaltech)
+	fragment@5 {
+		target = <&i2c_3>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&i2c_3_fts>;
+		__overlay__ {
+			status = "okay";
+			compatible = "fts_ts";
+			reg = <0x49>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <486 0x2008>;
+			reset-gpios = <&tlmm 32 0>;
+			focaltech,panel-id = <0x82 0x01 0x01>;
+			focaltech,display-coords = <0 0 1080 2246>;
+			focaltech,touch-area-min = <20>;
+		};
+	};
+
+	// Backlight
+	fragment@7 {
+		target = <&mdss_dsi0_backlight>;
+		__overlay__ {
+			compatible = "pwm-backlight";
+			pwms = <&pm8998_pwm 0 1000000>;
+			brightness-levels = <0 1023>;
+			default-brightness-level = <512>;
+			power-supply = <&pm8998_l17>;
+			status = "okay";
+		};
+	};
+};

@@ -2,6 +2,44 @@
 
 Porting guide and adaptation package for running [Droidian](https://droidian.org) on the Xiaomi Poco F1.
 
+## Multi-Variant Support
+
+This project supports **6 variants** with different desktop environments and panel types:
+
+| Variant | Desktop | Panel | Description |
+|---------|---------|-------|-------------|
+| `phosh-ebbg` | Phosh | eBBG (Everlight) | Standard panel variant |
+| `phosh-tianma` | Phosh | Tianma | Alternative panel |
+| `phosh-tianmaft` | Phosh | Tianma + Focaltech | Tianma panel with Focaltech touch |
+| `lomiri-ebbg` | Lomiri | eBBG (Everlight) | Ubuntu Touch-like experience |
+| `lomiri-tianma` | Lomiri | Tianma | Alternative panel |
+| `lomiri-tianmaft` | Lomiri | Tianma + Focaltech | Tianma panel with Focaltech touch |
+
+### Quick Build Commands
+
+```bash
+# Build all 6 variants
+make all
+
+# Build specific variant
+make VARIANT=phosh-ebbg
+
+# Build all Phosh variants
+make phosh
+
+# Build all Lomiri variants
+make lomiri
+
+# Build all eBBG variants
+make ebbg
+
+# Build all Tianma variants
+make tianma
+
+# Build all TianmaFT variants
+make tianmaft
+```
+
 ## Device Specifications
 
 | Property | Value |
