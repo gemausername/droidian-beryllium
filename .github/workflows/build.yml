@@ -1,0 +1,92 @@
+# GitHub Actions workflow for automated nightly builds
+# Xiaomi Poco F1 (beryllium)
+
+name: Build Droidian for Poco F1
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**/*.deb'
+      - 'kernel/**'
+  workflow_dispatch:
+  schedule:
+    # Run nightly at midnight UTC
+    - cron: '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/droidian/build-essential:current-amd64
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Initialize qemu-user-static
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Build kernel
+        run: |
+          cd kernel
+          apt-get update
+          apt-get install -y linux-packaging-snippets
+          mkdir -p debian/source
+          cp -v /usr/share/linux-packaging-snippets/kernel-info.mk.example debian/kernel-info.mk
+          echo "13" > debian/compat
+          echo "3.0 (native)" > debian/source/format
+          debian/rules debian/control
+          RELENG_HOST_ARCH="arm64" releng-build-package
+
+      - name: Build adaptation package
+        run: |
+          cd packages/adaptation-droidian-beryllium
+          dpkg-buildpackage -b -uc -us
+
+      - name: Build rootfs
+        run: |
+          cd rootfs
+          chmod +x build-rootfs.sh
+          ./build-rootfs.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidian-beryllium
+          path: |
+            output/*.img
+            packages/*.deb
+            kernel/*.deb
+
+      - name: Create release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            output/*.img
+            packages/*.deb
+          tag_name: nightly-${{ github.run_number }}
+          name: "Nightly Build #${{ github.run_number }}"
+          body: |
+            Automated nightly build for Xiaomi Poco F1 (beryllium)
+            
+            **Included packages:**
+            - adaptation-droidian-beryllium
+            - kernel packages
+            - rootfs image
+            
+            **Installation:**
+            See README.md for installation instructions.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

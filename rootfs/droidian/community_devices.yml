@@ -1,0 +1,31 @@
+# Community devices configuration for Droidian
+# Xiaomi Poco F1 (beryllium)
+
+beryllium:
+  vendor: xiaomi
+  codename: beryllium
+  name: "Poco F1"
+  arch: arm64
+  api: 28
+  gsiconfig:
+    enabled: true
+  desktop: phosh
+  formfactor: phone
+  community: true
+  maintainer: "Droidian Community"
+  description: "Xiaomi Poco F1 (SDM845)"
+
+  packages:
+    - adaptation-droidian-beryllium
+    - adaptation-droidian-beryllium-configs
+    - linux-image-*
+
+  overlays:
+    - path: /usr/lib/droidian/device
+      contents:
+        - path: encryption-supported
+          empty: true
+        - path: flashlightd-sysfs
+          empty: true
+        - path: flashlightd-sysfs-nodes
+          content: "/sys/class/leds/lcd-backlight/brightness"

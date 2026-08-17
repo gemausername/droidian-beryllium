@@ -1,0 +1,54 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Create necessary directories
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/adaptation-droidian-beryllium
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/droidian/device
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/usr/bin/droid
+
+	# Install device info
+	install -m 644 debian/device-info $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/adaptation-droidian-beryllium/device-info
+
+	# Install bluetooth script
+	install -m 755 debian/droid-get-bt-address.sh $(CURDIR)/debian/adaptation-droidian-beryllium/usr/bin/droid/droid-get-bt-address.sh
+
+	# Install brightness service
+	install -m 644 debian/adaptation-droidian-beryllium.brightness.service $(CURDIR)/debian/adaptation-droidian-beryllium/etc/systemd/system/adaptation-droidian-beryllium.brightness.service
+
+	# Install phosh config
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/etc/phosh
+	install -m 644 debian/phoc.ini $(CURDIR)/debian/adaptation-droidian-beryllium/etc/phosh/phoc.ini
+
+	# Install notch fix
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/droidian/device/phosh-notch
+	install -m 644 debian/notch-fix.json $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/droidian/device/phosh-notch/halium.json
+
+	# Install sysfs rules
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/etc/udev/rules.d
+	install -m 644 debian/70-beryllium.rules $(CURDIR)/debian/adaptation-droidian-beryllium/etc/udev/rules.d/70-beryllium.rules
+
+	# Install schedtune workaround
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/etc/systemd/system/android-mount.service.d
+	install -m 644 debian/10-schedtune.conf $(CURDIR)/debian/adaptation-droidian-beryllium/etc/systemd/system/android-mount.service.d/10-schedtune.conf
+
+	# Create device-specific marker files
+	touch $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/droidian/device/encryption-supported
+	touch $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/droidian/device/flashlightd-sysfs
+	echo "/sys/class/leds/lcd-backlight/brightness" > $(CURDIR)/debian/adaptation-droidian-beryllium/usr/lib/droidian/device/flashlightd-sysfs-nodes
+
+	# Create bluetooth board-address file
+	install -d $(CURDIR)/debian/adaptation-droidian-beryllium/var/lib/bluetooth
+	touch $(CURDIR)/debian/adaptation-droidian-beryllium/var/lib/bluetooth/board-address
+
+override_dh_auto_build:
+	# Nothing to build
+
+override_dh_auto_test:
+	# No tests
+
+override_dh_dwz:
+override_dh_strip:
+override_dh_makeshlibs:

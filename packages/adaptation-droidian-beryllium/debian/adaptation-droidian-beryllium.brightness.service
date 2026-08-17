@@ -1,0 +1,11 @@
+[Unit]
+Description=Set LCD brightness on boot for Poco F1
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo 128 > /sys/class/leds/lcd-backlight/brightness'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

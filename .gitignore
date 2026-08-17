@@ -1,0 +1,22 @@
+# Build outputs
+output/
+*.deb
+*.img
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup.*
+
+# Temporary files
+*.tmp
+*.temp

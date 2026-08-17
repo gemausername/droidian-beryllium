@@ -1,0 +1,7 @@
+{
+  "notch-width": 200,
+  "notch-height": 30,
+  "corner-radius": 0,
+  "monitor": "HWCOMPOSER-1",
+  "exclude": []
+}

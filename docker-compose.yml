@@ -1,0 +1,88 @@
+# Docker Compose for Droidian Build Environment
+# This docker-compose.yml provides easy access to the build environment
+
+version: '3.8'
+
+services:
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: droidian-beryllium-builder
+    volumes:
+      - .:/build
+      - ./output:/output
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /build
+    stdin_open: true
+    tty: true
+    network_mode: host
+    privileged: true
+    environment:
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+
+  # Service for kernel building
+  kernel-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: droidian-kernel-builder
+    volumes:
+      - ./kernel:/build/kernel
+      - ./output:/output
+    working_dir: /build/kernel
+    command: >
+      bash -c "
+        apt-get update && apt-get install -y linux-packaging-snippets &&
+        mkdir -p debian/source &&
+        cp -v /usr/share/linux-packaging-snippets/kernel-info.mk.example debian/kernel-info.mk &&
+        echo '13' > debian/compat &&
+        echo '3.0 (native)' > debian/source/format &&
+        debian/rules debian/control &&
+        RELENG_HOST_ARCH='arm64' releng-build-package
+      "
+    stdin_open: true
+    tty: true
+    privileged: true
+
+  # Service for adaptation package building
+  adaptation-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: droidian-adaptation-builder
+    volumes:
+      - ./packages:/build/packages
+      - ./output:/output
+    working_dir: /build/packages/adaptation-droidian-beryllium
+    command: >
+      bash -c "
+        dpkg-buildpackage -b -uc -us
+      "
+    stdin_open: true
+    tty: true
+
+  # Service for rootfs building
+  rootfs-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: droidian-rootfs-builder
+    volumes:
+      - ./rootfs:/build/rootfs
+      - ./output:/output
+    working_dir: /build/rootfs
+    command: >
+      bash -c "
+        chmod +x build-rootfs.sh &&
+        ./build-rootfs.sh
+      "
+    stdin_open: true
+    tty: true
+    privileged: true
+
+# Networks
+networks:
+  default:
+    driver: bridge

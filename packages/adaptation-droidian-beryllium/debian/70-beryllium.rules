@@ -1,0 +1,31 @@
+# Udev rules for Xiaomi Poco F1 (beryllium)
+
+# LCD Backlight
+ACTION=="add|change", KERNEL=="lcd-backlight", OWNER="root", GROUP="system", MODE="0666"
+
+# Battery
+ACTION=="add|change", KERNEL=="battery", OWNER="root", GROUP="system", MODE="0666"
+
+# USB
+ACTION=="add|change", KERNEL=="usb", OWNER="root", GROUP="system", MODE="0666"
+
+# Input devices - disable unused HID interfaces that cause cursor issues
+# Touchscreen
+ACTION=="add|change", KERNEL=="event[0-9]*", SUBSYSTEM=="input", ATTRS{name}=="fts_ts", OWNER="root", GROUP="input", MODE="0664"
+
+# Proximity sensor
+ACTION=="add|change", KERNEL=="event[0-9]*", SUBSYSTEM=="input", ATTRS{name}=="proximity", OWNER="root", GROUP="input", MODE="0664"
+
+# Accelerometer
+ACTION=="add|change", KERNEL=="event[0-9]*", SUBSYSTEM=="input", ATTRS{name}=="accelerometer", OWNER="root", GROUP="input", MODE="0664"
+
+# Hide unused HID interface that shows cursor
+ACTION=="add|change", KERNEL=="event[0-9]*", SUBSYSTEM=="input", ATTRS{name}=="gpio-keys", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+
+# Camera flash LED
+ACTION=="add|change", KERNEL=="leds", SUBSYSTEM=="leds", ATTRS{name}=="flash", OWNER="root", GROUP="system", MODE="0666"
+
+# Notification LED
+ACTION=="add|change", KERNEL=="leds", SUBSYSTEM=="leds", ATTRS{name}=="red", OWNER="root", GROUP="system", MODE="0666"
+ACTION=="add|change", KERNEL=="leds", SUBSYSTEM=="leds", ATTRS{name}=="green", OWNER="root", GROUP="system", MODE="0666"
+ACTION=="add|change", KERNEL=="leds", SUBSYSTEM=="leds", ATTRS{name}=="blue", OWNER="root", GROUP="system", MODE="0666"
