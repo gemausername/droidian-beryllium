@@ -1,0 +1,193 @@
+# GitHub Actions workflow for automated builds
+# Xiaomi Poco F1 (beryllium) - Multi-Variant Support
+
+name: Build Droidian for Poco F1
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**/*.deb'
+      - 'kernel/**'
+      - 'variants/**'
+      - 'rootfs/**'
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Variant to build (leave empty for all)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - phosh-ebbg
+          - phosh-tianma
+          - phosh-tianmaft
+          - lomiri-ebbg
+          - lomiri-tianma
+          - lomiri-tianmaft
+      desktop:
+        description: 'Desktop environment'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - phosh
+          - lomiri
+      panel:
+        description: 'Panel type'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - ebbg
+          - tianma
+          - tianmaft
+  schedule:
+    # Run nightly at midnight UTC
+    - cron: '0 0 * * *'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      kernel: ${{ steps.filter.outputs.kernel }}
+      variants: ${{ steps.filter.outputs.variants }}
+      rootfs: ${{ steps.filter.outputs.rootfs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            kernel:
+              - 'kernel/**'
+            variants:
+              - 'variants/**'
+            rootfs:
+              - 'rootfs/**'
+
+  build-kernel:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.kernel == 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/droidian/build-essential:current-amd64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Initialize qemu-user-static
+        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Build kernel
+        run: |
+          cd kernel
+          apt-get update
+          apt-get install -y linux-packaging-snippets
+          mkdir -p debian/source
+          cp -v /usr/share/linux-packaging-snippets/kernel-info.mk.example debian/kernel-info.mk
+          echo "13" > debian/compat
+          echo "3.0 (native)" > debian/source/format
+          debian/rules debian/control
+          RELENG_HOST_ARCH="arm64" releng-build-package
+
+      - name: Upload kernel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-packages
+          path: |
+            *.deb
+            out/KERNEL_OBJ/boot.img
+
+  build-variant:
+    needs: [detect-changes, build-kernel]
+    if: always() && (needs.detect-changes.outputs.variants == 'true' || needs.detect-changes.outputs.rootfs == 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: ${{ github.event.inputs.variant == '' && fromJSON('["phosh-ebbg","phosh-tianma","phosh-tianmaft","lomiri-ebbg","lomiri-tianma","lomiri-tianmaft"]') || fromJSON(format('["{0}"]', github.event.inputs.variant)) }}
+      fail-fast: false
+    container:
+      image: quay.io/droidian/build-essential:current-amd64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download kernel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kernel-packages
+          path: kernel/output/
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Initialize qemu-user-static
+        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Build adaptation package
+        run: |
+          bash scripts/build-adaptation-variant.sh ${{ matrix.variant }}
+
+      - name: Build rootfs
+        run: |
+          bash scripts/build-rootfs-variant.sh ${{ matrix.variant }}
+
+      - name: Upload variant artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidian-${{ matrix.variant }}
+          path: |
+            output/*.deb
+            output/*.img
+
+  release:
+    needs: build-variant
+    if: github.ref == 'refs/heads/main' && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/**/*.deb
+            artifacts/**/*.img
+          tag_name: nightly-${{ github.run_number }}
+          name: "Nightly Build #${{ github.run_number }}"
+          body: |
+            Automated nightly build for Xiaomi Poco F1 (beryllium)
+            
+            **Available Variants:**
+            - `droidian-phosh-ebbg` - Phosh + eBBG Panel
+            - `droidian-phosh-tianma` - Phosh + Tianma Panel
+            - `droidian-phosh-tianmaft` - Phosh + Tianma + Focaltech
+            - `droidian-lomiri-ebbg` - Lomiri + eBBG Panel
+            - `droidian-lomiri-tianma` - Lomiri + Tianma Panel
+            - `droidian-lomiri-tianmaft` - Lomiri + Tianma + Focaltech
+            
+            **Installation:**
+            See README.md for installation instructions.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
